@@ -1,0 +1,50 @@
+#!/bin/bash
+set -e
+
+function cecho ()
+{
+    # print in colors!
+    # see https://linuxcommand.org/lc3_adv_tput.php
+    # usage:
+    # cecho [color] [text]
+    # ex: cecho 1 "Hola!"
+    color=`tput setaf $1`
+    reset=`tput sgr0`
+    echo "${color} $2 ${reset}"
+}
+
+root_dir=$(git rev-parse --show-toplevel)
+
+# if [[ ! -f "$root_dir/.envrc" ]]; then
+#     touch "$root_dir/.envrc"
+# fi
+
+if [[ -f "$root_dir/.env_base" ]]; then
+    cd $(echo $root_dir)
+    cp -f .envrc .envrc_new || touch .envrc .envrc_new
+    while IFS= read -r line
+    do
+        line_gcp=${line#*=}
+        var_name=${line%=*}
+        cecho 3 "Updating $var_name with $line_gcp"
+        origen="export $var_name="
+        origen=$(grep "$origen" .envrc | head -1)
+        repl="export ${var_name}=$(gcloud secrets versions access ${line_gcp#*:} --secret=${line_gcp%:*})";
+        if [[ $origen ]]; then
+            cat .envrc_new | sed 's/'"$origen"'/'"$repl"'/' > .envrc_new2
+            mv -f .envrc_new2 .envrc_new
+        else
+            echo -e $repl >> .envrc_new
+        fi
+    done < .env_base
+    diff_vars="$(diff -dwq .envrc .envrc_new; [ $? -ne 3 ])"
+    if [[ $diff_vars ]]; then
+        cecho 1 "Changes!"
+        echo $(diff -dw .envrc .envrc_new; [ $? -ne 3 ])
+    else
+        cecho 2 "No changes!"
+    fi
+    cp -f .envrc_new .envrc
+    rm .envrc_new
+    cd - > /dev/null
+fi
