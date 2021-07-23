@@ -27,9 +27,11 @@ if [[ -f "$root_dir/.env_base" ]]; then
         line_gcp=${line#*=}
         var_name=${line%=*}
         cecho 3 "Updating $var_name with $line_gcp"
-        origen="export $var_name="
+        origen="^export $var_name="
         origen=$(grep "$origen" .envrc | head -1)
+        origen=$(echo $origen | sed 's/\//\\\//g')
         repl="export ${var_name}=$(gcloud secrets versions access ${line_gcp#*:} --secret=${line_gcp%:*})";
+        repl=$(echo $repl | sed 's/\//\\\//g')
         if [[ $origen ]]; then
             cat .envrc_new | sed 's/'"$origen"'/'"$repl"'/' > .envrc_new2
             mv -f .envrc_new2 .envrc_new
