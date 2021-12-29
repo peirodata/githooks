@@ -15,10 +15,6 @@ function cecho ()
 
 root_dir=$(git rev-parse --show-toplevel)
 
-# if [[ ! -f "$root_dir/.envrc" ]]; then
-#     touch "$root_dir/.envrc"
-# fi
-
 if [[ -f "$root_dir/.env_base" ]]; then
     cd $(echo $root_dir)
     cp -f .envrc .envrc_new || touch .envrc .envrc_new
@@ -29,11 +25,10 @@ if [[ -f "$root_dir/.env_base" ]]; then
         cecho 3 "Updating $var_name with $line_gcp"
         origen="^export $var_name="
         origen=$(grep "$origen" .envrc | head -1)
-        origen=$(echo $origen | sed 's/\//\\\//g')
         repl="export ${var_name}=$(gcloud secrets versions access ${line_gcp#*:} --secret=${line_gcp%:*})";
-        repl=$(echo $repl | sed 's/\//\\\//g')
         if [[ $origen ]]; then
-            cat .envrc_new | sed 's/'"$origen"'/'"$repl"'/' > .envrc_new2
+            # we use the | character as the delimiter for sed
+            cat .envrc_new | sed 's|'"$origen"'|'"$repl"'|' > .envrc_new2
             mv -f .envrc_new2 .envrc_new
         else
             echo -e $repl >> .envrc_new

@@ -5,6 +5,10 @@ Scripts run by git at critical moments.
 - Complements the pre-commit hooks done with [pre-commit](https://pre-commit.com/)
 - Update secrets after each `git pull` and `git checkout`
 
+## IMPORTANT NOTE
+
+We use `|` as a delimiter for the script replacement. Make sure the value of the secrets do not contain that character.
+
 ## Installation
 
 Copy the scripts into the hooks directory of each desired project:
